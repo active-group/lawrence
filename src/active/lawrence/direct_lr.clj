@@ -25,10 +25,7 @@
                          attribute-value (apply-attribution attribution
                                                             (reverse (take rhs-length attribute-values)))]
                      
-                     (if (zero? rhs-length) ;; FIXME: zap this case?
-                       (ds-parse-bar grammar k compute-closure
-                                     closure lhs (list attribute-value) input)
-                       [lhs rhs-length attribute-value input]))
+                     [lhs rhs-length attribute-value input])
                    (c/error `ds-parse "parse error")))]
     (if (empty? input)
       (reduce)

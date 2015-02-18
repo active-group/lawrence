@@ -67,11 +67,9 @@
   (let [start-production (grammar-start-production grammar)]
     (ds-parse grammar
 	      k
-	      (if (= method :lr)
-		  (fn [state grammar k]
-		    (compute-lr-closure state grammar k))
-		  (fn [state grammar k]
-		    (compute-slr-closure state grammar k)))
+              (case method
+                :lr compute-lr-closure
+                :slr compute-slr-closure)
 	      #{(make-item start-production 0 '())}
               '()
 	      input)))

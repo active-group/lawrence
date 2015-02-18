@@ -18,9 +18,9 @@
   (direct/parse g 1 m (input g vs)))
 
 (defn should-accept
-  [g vs]
-  (is (= :accept (parse g :lr vs)))
-  (is (= :accept (parse g :slr vs))))
+  [g vs res]
+  (is (= res (parse g :lr vs)))
+  (is (= res (parse g :slr vs))))
 
 (defn should-error
   [g vs]
@@ -28,20 +28,20 @@
   (is (thrown? Exception (direct/parse g 1 :slr (input g vs)))))
 
 (deftest g00-test
-  (should-accept g00 (list [:l 5]))
+  (should-accept g00 (list [:l]) nil)
   (should-error g00 (list))
-  (should-error g00 (list [:l 5] [:l 7])))
+  (should-error g00 (list [:l] [:l])))
 
 (deftest g08-test
-  (should-accept g08 (list [:l 5] [:r 5]))
-  (should-accept g08 (list [:l 5] [:l 5] [:r 5] [:r 5]))
+  (should-accept g08 (list [:l] [:r]) nil)
+  (should-accept g08 (list [:l] [:l] [:r] [:r]) nil)
   (should-error g08 (list))
-  (should-error g08 (list [:l 5] [:l 5] [:l 5] [:r 5]))
-  (should-error g08 (list [:l 5] [:l 7])))
+  (should-error g08 (list [:l] [:l] [:l] [:r]))
+  (should-error g08 (list [:l] [:l])))
 
 (deftest g10-test
-  (should-accept g10 (list [:l nil] [:n 5] [:+ nil] [:n 7] [:r nil] [:* nil] [:n 10]))
-  (should-error g10 (list [:l nil] [:n 5] [:+ nil] [:n 7] [:* nil] [:n 10])))
+  (should-accept g10 (list [:l] [:n 5] [:+] [:n 7] [:r] [:*] [:n 10]) 120)
+  (should-error g10 (list [:l] [:n 5] [:+] [:n 7] [:*] [:n 10])))
                                                                              
   
 

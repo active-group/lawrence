@@ -10,6 +10,7 @@
 
 (defn ds-parse
   [grammar k compute-closure state attribute-values input]
+  {:pre [(= (active state) (count attribute-values))]}
   (let [closure (compute-closure state grammar k)
         reduce (fn []
                  (if-let [item (find-lookahead-item (accept closure) k input)]

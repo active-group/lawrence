@@ -4,7 +4,6 @@
             [active.lawrence.runtime :refer :all]
             [active.clojure.condition :as c]))
 
-;; only correct number of attributes
 ;; FIXME: error recovery, error
 
 (declare ds-parse-bar)
@@ -42,8 +41,12 @@
 (defn ds-parse-bar
   [grammar k compute-closure closure symbol attribute-value attribute-values input]
   (let [the-next-nonterminals (next-nonterminals closure grammar)]
-    (let [[lhs dot attribute-value input] (ds-parse grammar k compute-closure
-                                                    (goto closure symbol) (cons attribute-value attribute-values) input)]
+    (let [next-state (goto closure symbol)
+          [lhs dot attribute-value input] (ds-parse grammar k compute-closure
+                                                    next-state
+                                                    (cons attribute-value
+                                                          (take (- (active next-state) 1) attribute-values))
+                                                    input)]
       (cond
        (empty? the-next-nonterminals) [lhs (- dot 1) attribute-value input]
 

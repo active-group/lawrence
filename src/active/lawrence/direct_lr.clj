@@ -36,17 +36,16 @@
 
 (defn ds-parse-bar
   [grammar k compute-closure closure symbol attribute-value attribute-values input]
-  (let [the-next-nonterminals (next-nonterminals closure grammar)]
-    (let [next-state (goto closure symbol)
-          retval (ds-parse grammar k compute-closure
-                           next-state
-                           (cons attribute-value
-                                 (take (- (active next-state) 1) attribute-values))
-                           input)]
+  (let [next-state (goto closure symbol)
+        retval (ds-parse grammar k compute-closure
+                         next-state
+                         (cons attribute-value
+                               (take (- (active next-state) 1) attribute-values))
+                         input)]
+  
+    (if (empty? (next-nonterminals closure grammar))
+      (dec-dot retval)
       (cond
-       (empty? the-next-nonterminals)
-       (dec-dot retval)
-
        (> (.dot retval) 1) 
        (dec-dot retval)
        
@@ -58,7 +57,7 @@
        
        :else (recur grammar k compute-closure
                     closure
-                    (.lhs retval)
+                    (.lhs retval) ;; guaranteed to be a member of next nonterminals
                     (.-attribute-value retval)
                     attribute-values
                     (.-input retval))))))

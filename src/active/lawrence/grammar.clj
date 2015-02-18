@@ -155,7 +155,7 @@
                             (concat [`[(make-production '(~'$start (~?start-symbol) ~'identity)
                                                         ~nonterminal-offset
                                                         ~(vector (symbol-table ?start-symbol))
-                                                        identity)]]
+                                                        'identity)]]
                                     (map (fn [lhs]
                                            (let [lhs-rules
                                                  (filter (fn [rule]

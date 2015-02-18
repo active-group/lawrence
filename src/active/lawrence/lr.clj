@@ -2,7 +2,8 @@
   (:require [clojure.set :as set]
             [active.clojure.record :refer :all]
             [active.lawrence.grammar :refer :all]
-            [active.lawrence.runtime :refer :all]))
+            [active.lawrence.runtime :refer :all]
+            [clojure.pprint :refer (pprint)]))
 
 ; LR support code needed at generation time
 
@@ -247,6 +248,142 @@
   (some (fn [item]
           (= (grammar-start grammar) (item-lhs item)))
         state))
+
+; Code generation
+
+(defn make-lookahead-matcher
+  [closure k input-name generate-matching else]
+  ;; FIXME: k > 1
+  (assert (= k 1)) 
+  `(cond
+    ~@(mapcat (fn [item]
+                (let [lookahead (item-lookahead item)]
+                  (if (empty? lookahead)
+                    [`(empty? ~input-name)
+                     (generate-matching item)]
+                    [`(and (not (empty? ~input-name)) ;; FIXME: get rid of this
+                          (= ~(first lookahead) (pair-token (first ~input-name))))
+                     (generate-matching item)])))
+              (accept closure))
+    :else ~else))
+
+(defn- parse-bar-name
+  [id sym]
+  (symbol (str "ds-parse-bar-" id "-" sym)))
+
+(defn- parse-name
+  [id]
+  (symbol (str "ds-parse-" id)))
+
+(defn make-ds-parse
+  "Returns [code new-state-map todo-states]."
+  [state-map-0 grammar k compute-closure state]
+  (let [state-map-atom (atom state-map-0)
+        todo (atom '())
+        state-id (fn [state]
+                   (or (get @state-map-atom state)
+                       (let [next-id (count @state-map-atom)]
+                         (swap! state-map-atom assoc state next-id)
+                         (swap! todo conj state)
+                         next-id)))
+        id (state-id state)
+        closure (compute-closure state grammar k)
+        attribute-names (map (fn [i]
+                               (symbol (str "attribute-value-" i)))
+                             (range 0 (active state)))
+        next-terms (next-terminals closure grammar)
+        next-nonterms (next-nonterminals closure grammar)
+        next-symbols (concat next-terms (next-nonterminals closure grammar))
+        input-name `input#
+        pair-name `pair#
+        parse `(defn- ~(parse-name id)
+                 [~@attribute-names ~input-name]
+                 (let [reduce# (fn []
+                                 ~(make-lookahead-matcher closure k input-name
+                                                          (fn [item]
+                                                            (let [rhs-length (count (item-rhs item))
+                                                                  lhs (item-lhs item)
+                                                                  attribution (production-attribution (item-production item))
+                                                                  attribute-value `(~attribution
+                                                                                    ~@(reverse (take rhs-length attribute-names)))]
+                                                 
+                                                              `(->RetVal ~lhs ~rhs-length ~attribute-value ~input-name)))
+                                                          `(c/error '~(parse-name id) "parse error")))]
+                   (if (empty? ~input-name)
+                     (reduce#)
+                     (let [~pair-name (first ~input-name)
+                           symbol# (pair-token ~pair-name)]
+                       (case symbol#
+                         ~@(mapcat (fn [t]
+                                     [t `(~(parse-bar-name id t)
+                                          (pair-attribute-value ~pair-name) 
+                                          ~@attribute-names
+                                          (rest ~input-name))])
+                                   next-terms)
+                         (reduce#))))))
+        parse-bars (map (fn [symbol]
+                          (let [next-state (goto closure symbol)
+                                retval-name `retval#]
+                            `(defn- ~(parse-bar-name id symbol)
+                               [attribute-value# ~@attribute-names ~input-name]
+                               (let [~retval-name (~(parse-name (state-id next-state))
+                                                   attribute-value#
+                                                   ~@(take (- (active next-state) 1) attribute-names)
+                                                   ~input-name)]
+                                 ~(if (empty? next-nonterms)
+                                    `(dec-dot ~retval-name)
+                                    `(cond
+                                      (> (.dot ~retval-name) 1) 
+                                      (dec-dot ~retval-name)
+                        
+                                      ~@(if (initial? closure grammar)
+                                          [`(= ~(grammar-start grammar) (.-lhs ~retval-name))
+                                           `(if (empty? (.-input ~retval-name))
+                                              (.-attribute-value ~retval-name)
+                                              (c/error '~(parse-bar-name id symbol) "parse error" ~symbol))]
+                                          [])
+
+                                      :else 
+                                      (case (.lhs ~retval-name)
+                                        ~@(mapcat (fn [nt]
+                                                    [nt
+                                                     `(~(parse-bar-name id nt)
+                                                       (.-attribute-value ~retval-name)
+                                                       ~@attribute-names
+                                                       (.-input ~retval-name))])
+                                               next-nonterms))))))))
+                        next-symbols)
+        code (vec (cons parse parse-bars))] ; strictness because state
+    [code @state-map-atom @todo]))
+
+(defn generate-ds-parse-functions
+  [grammar k compute-closure]
+  (let [start-state #{(make-item (grammar-start-production grammar) 0 '())}]
+    (loop [state-map {start-state 0}
+           todo (list start-state)
+           code []]
+      (if (empty? todo)
+        code
+        (let [[new-code state-map new-todos] (make-ds-parse state-map grammar k compute-closure (first todo))]
+          (recur state-map
+                 (concat (rest todo) new-todos)
+                 (concat code new-code)))))))
+
+(defn write-ds-parse-ns
+  [grammar k compute-closure ns-name writer]
+  (let [fns (generate-ds-parse-functions grammar k compute-closure)]
+    (doseq [form 
+            `((ns ~ns-name
+                (:require 
+                 [active.clojure.condition :as ~'c]
+                 [active.lawrence.runtime :refer :all]))
+              (declare ~@(map second fns))
+              ~@fns
+              (defn ~'parse
+                [input#]
+                (~(parse-name 0) input#)))]
+      (pprint form writer))))
+
 ; Conflict handling
 
 (defn conflict-items=?

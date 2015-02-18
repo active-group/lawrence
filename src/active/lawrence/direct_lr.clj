@@ -10,8 +10,7 @@
 
 (defn apply-attribution
   [attr vals]
-  ;; FIXME: need eval or something
-  (apply attr vals))
+  (apply (eval attr) vals))
 
 (defn ds-parse
   [grammar k compute-closure state attribute-values input]

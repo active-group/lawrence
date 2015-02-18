@@ -6,6 +6,16 @@
 
 ;; FIXME: error recovery, error
 
+(defn find-lookahead-item
+  [item-set k input]
+  (loop [item-set (seq item-set)]
+    (if (empty? item-set)
+      false
+      (let [item (first item-set)]
+        (if (lookahead-matches? k (item-lookahead item) input)
+          item
+          (recur (rest item-set)))))))
+
 (declare ds-parse-bar)
 
 (defn ds-parse

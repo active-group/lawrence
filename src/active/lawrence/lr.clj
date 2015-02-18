@@ -410,31 +410,6 @@
   [trace-level closure terminal grammar]
   (println "Shifting with ") (grammar-symbol->name terminal grammar))
 
-; Lookahead
-
-(defn lookahead-matches?
-  [k lookahead input]
-  (loop [k k
-         lookahead (seq lookahead) ;; FIXME: seq necessary
-         input (seq input)]
-    (cond
-     (zero? k) true
-     (empty? lookahead) (empty? input)
-     (empty? input) false
-     (= (first lookahead) (pair-token (first input)))
-     (recur (- k 1) (rest lookahead) (rest input))
-     :else false)))
-
-(defn find-lookahead-item
-  [item-set k input]
-  (loop [item-set (seq item-set)]
-    (if (empty? item-set)
-      false
-      (let [item (first item-set)]
-        (if (lookahead-matches? k (item-lookahead item) input)
-          item
-          (recur (rest item-set)))))))
-
 ; List utilities
 
 (defn number-coll<?

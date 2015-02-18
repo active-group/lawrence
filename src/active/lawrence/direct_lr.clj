@@ -8,10 +8,6 @@
 
 (declare ds-parse-bar)
 
-(defn apply-attribution
-  [attr vals]
-  (apply (eval attr) vals))
-
 (defn ds-parse
   [grammar k compute-closure state attribute-values input]
   (let [closure (compute-closure state grammar k)

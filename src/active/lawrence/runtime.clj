@@ -29,6 +29,9 @@
   (.set_dot rv (dec (.dot rv)))
   rv)
 
+(defn apply-attribution
+  [attr vals]
+  (apply (eval attr) vals))
 
 
 

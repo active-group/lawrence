@@ -169,7 +169,7 @@
                                                        `(make-production '~(cons lhs spec)
                                                                          ~lhs-index
                                                                          ~(mapv symbol-table rhs)
-                                                                         (fn [~@(map-indexed (fn [i _]
+                                                                         '(fn [~@(map-indexed (fn [i _]
                                                                                                (symbol (str "$" (+ 1 i))))
                                                                                              rhs)]
                                                                            ~@body))))

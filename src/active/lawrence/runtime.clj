@@ -14,5 +14,21 @@
   [^Pair p]
   (.attribute-value p))
 
+(definterface IRetVal
+  (dot [])
+  (set_dot [x]))
+
+(deftype RetVal
+    [lhs ^:unsynchronized-mutable dot attribute-value input]
+  IRetVal
+  (dot [_] dot)
+  (set_dot [_ x] (set! dot x)))
+
+(defn dec-dot
+  [^RetVal rv]
+  (.set_dot rv (dec (.dot rv)))
+  rv)
+
+
 
 

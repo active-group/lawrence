@@ -24,7 +24,7 @@
                          attribute-value (apply-attribution attribution
                                                             (reverse (take rhs-length attribute-values)))]
                      
-                     [lhs rhs-length attribute-value input])
+                     (->RetVal lhs rhs-length attribute-value input))
                    (c/error `ds-parse "parse error")))]
     (if (empty? input)
       (reduce)
@@ -42,28 +42,30 @@
   [grammar k compute-closure closure symbol attribute-value attribute-values input]
   (let [the-next-nonterminals (next-nonterminals closure grammar)]
     (let [next-state (goto closure symbol)
-          [lhs dot attribute-value input] (ds-parse grammar k compute-closure
-                                                    next-state
-                                                    (cons attribute-value
-                                                          (take (- (active next-state) 1) attribute-values))
-                                                    input)]
+          retval (ds-parse grammar k compute-closure
+                           next-state
+                           (cons attribute-value
+                                 (take (- (active next-state) 1) attribute-values))
+                           input)]
       (cond
-       (empty? the-next-nonterminals) [lhs (- dot 1) attribute-value input]
+       (empty? the-next-nonterminals)
+       (dec-dot retval)
 
-       (> dot 1) [lhs (- dot 1) attribute-value input]
+       (> (.dot retval) 1) 
+       (dec-dot retval)
        
        (and (initial? closure grammar)
-            (= (grammar-start grammar) lhs))
-       (if (empty? input)
-         attribute-value
+            (= (grammar-start grammar) (.-lhs retval)))
+       (if (empty? (.-input retval))
+         (.-attribute-value retval)
          (c/error `ds-parse-bar "parse error"))
        
        :else (recur grammar k compute-closure
                     closure
-                    lhs
-                    attribute-value
+                    (.lhs retval)
+                    (.-attribute-value retval)
                     attribute-values
-                    input)))))
+                    (.-input retval))))))
 
 (defn parse
   [grammar k method input]

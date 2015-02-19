@@ -2,7 +2,8 @@
   (:require [active.lawrence.grammar :refer :all]
             [active.lawrence.lr :refer :all]
             [active.lawrence.runtime :refer :all]
-            [active.clojure.condition :as c]))
+            [active.clojure.condition :as c])
+  (:import [active.lawrence.runtime RetVal]))
 
 ;; FIXME: error recovery, error
 
@@ -47,11 +48,11 @@
 (defn ds-parse-bar
   [grammar k compute-closure closure symbol attribute-value attribute-values input]
   (let [next-state (goto closure symbol)
-        retval (ds-parse grammar k compute-closure
-                         next-state
-                         (cons attribute-value
-                               (take (- (active next-state) 1) attribute-values))
-                         input)]
+        ^RetVal retval (ds-parse grammar k compute-closure
+                                 next-state
+                                 (cons attribute-value
+                                       (take (- (active next-state) 1) attribute-values))
+                                 input)]
   
     (if (empty? (next-nonterminals closure grammar))
       (dec-dot retval)

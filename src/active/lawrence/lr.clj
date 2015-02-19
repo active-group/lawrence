@@ -133,11 +133,11 @@
 
 (defn compute-slr-closure
   [state grammar k]
-  (let [predict-sets (grammar-fetch-property
-                      grammar
-                      :predict-sets
-                      (fn [grammar]
-                        (object-array (grammar-number-of-nonterminals grammar))))
+  (let [^objects predict-sets (grammar-fetch-property
+                               grammar
+                               :predict-sets
+                               (fn [grammar]
+                                 (object-array (grammar-number-of-nonterminals grammar))))
 	offset (grammar-nonterminal-offset grammar)
 
         compute-predict-lhses (fn [lhs]
@@ -199,7 +199,7 @@
     (if (empty? item-set)
 	m
 	(recur (rest item-set)
-               (max (item-position (first item-set)) m)))))
+               (long (max (item-position (first item-set)) m))))))
 
 (defn next-symbols
   [state-closure grammar]

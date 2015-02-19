@@ -411,7 +411,7 @@
 ;;; follow-set as appropriate
 
 (defn next-follow-map
-  [grammar k last-follow-map]
+  [grammar k ^objects last-follow-map]
   (let [new-follow-map (aclone last-follow-map)
 	offset (grammar-nonterminal-offset grammar)]
     (grammar-for-each-production
@@ -442,7 +442,7 @@
       (compute-follow-1 grammar)
       ;; fixpoint iteration
       (let [offset (grammar-nonterminal-offset grammar)]
-	(loop [follow-map (initial-follow-map grammar)]
+	(loop [^objects follow-map (initial-follow-map grammar)]
 	  (let [new-follow-map (next-follow-map grammar k follow-map)]
 	    (if (not (map-equal? follow-map new-follow-map))
               (recur new-follow-map)

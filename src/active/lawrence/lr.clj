@@ -370,19 +370,25 @@
                  (concat code new-code)))))))
 
 (defn write-ds-parse-ns
-  [grammar k compute-closure ns-name writer]
-  (let [fns (generate-ds-parse-functions grammar k compute-closure)]
-    (doseq [form 
-            `((ns ~ns-name
-                (:require 
-                 [active.clojure.condition :as ~'c]
-                 [active.lawrence.runtime :refer :all]))
-              (declare ~@(map second fns))
-              ~@fns
-              (defn ~'parse
-                [input#]
-                (~(parse-name 0) input#)))]
-      (pprint form writer))))
+  [grammar k method ns-name reqs writer]
+  (let [compute-closure (case method
+                          :lr compute-lr-closure
+                          :slr compute-slr-closure)
+        fns (generate-ds-parse-functions grammar k compute-closure)]
+    (binding [*out* writer]
+      (doseq [form 
+              `((ns ~ns-name
+                  (:require 
+                   [active.clojure.condition :as ~'c]
+                   [active.lawrence.runtime :refer :all]
+                   ~@reqs))
+                (declare ~@(map second fns))
+                ~@fns
+                (defn ~'parse
+                  [input#]
+                  (~(parse-name 0) input#)))]
+        (pprint form)
+        (flush)))))
 
 ; Conflict handling
 

@@ -255,17 +255,21 @@
   [closure k input-name generate-matching else]
   ;; FIXME: k > 1
   (assert (= k 1)) 
-  `(cond
-    ~@(mapcat (fn [item]
-                (let [lookahead (item-lookahead item)]
-                  (if (empty? lookahead)
-                    [`(empty? ~input-name)
-                     (generate-matching item)]
-                    [`(and (not (empty? ~input-name)) ;; FIXME: get rid of this
-                          (= ~(first lookahead) (pair-token (first ~input-name))))
-                     (generate-matching item)])))
-              (accept closure))
-    :else ~else))
+  
+  (let [[empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item))) 
+                                          (accept closure))
+        non-empty-case
+        `(case (pair-token (first ~input-name))
+           ~@(mapcat (fn [item]
+                       [(first (item-lookahead item))
+                        (generate-matching item)])
+                     non-empty)
+           ~else)]
+    (if (empty? empty)
+      non-empty-case
+      `(if (empty? ~input-name)
+         ~(generate-matching (first empty))
+         ~non-empty-case))))
 
 (defn- parse-bar-name
   [id sym]

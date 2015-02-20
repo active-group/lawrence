@@ -383,22 +383,22 @@
                           :slr compute-slr-closure)
         fns (generate-ds-parse-functions grammar k compute-closure)]
     (with-open [writer (clojure.java.io/writer writer-arg)]
-    (binding [*out* writer
-              *print-meta* true]
-      (doseq [form 
-              `((ns ~ns-name
-                  (:require 
-                   [active.clojure.condition :as ~'c]
-                   [active.lawrence.runtime :refer :all]
-                   ~@reqs))
-                (declare ~@(map second fns))
-                ~@fns
-                ~(let [input-name `input#]
-                   `(defn ~'parse
-                      [~input-name]
-                      (let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
-                        (.-attribute-value retval#)))))]
-        (pprint form))))))
+      (binding [*out* writer
+                *print-meta* true]
+        (doseq [form 
+                `((ns ~ns-name
+                    (:require 
+                     [active.clojure.condition :as ~'c]
+                     [active.lawrence.runtime :refer :all]
+                     ~@reqs))
+                  (declare ~@(map second fns))
+                  ~@fns
+                  ~(let [input-name `input#]
+                     `(defn ~'parse
+                        [~input-name]
+                        (let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
+                          (.-attribute-value retval#)))))]
+          (pprint form))))))
 
 ; Conflict handling
 

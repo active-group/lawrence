@@ -43,6 +43,8 @@
   (should-accept g10 (list [:l] [:n 5] [:+] [:n 7] [:r] [:*] [:n 10]) 120)
   (should-error g10 (list [:l] [:n 5] [:+] [:n 7] [:*] [:n 10])))
                                                                              
-  
 
+(deftest goptional-test
+  (should-accept goptional (list) :absent)
+  (should-accept goptional (list [:foo]) :present))
 

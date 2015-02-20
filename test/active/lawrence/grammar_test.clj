@@ -78,3 +78,9 @@
        ((AN) $1))
    (AN ((E) $1)
        ((AN C E) $1))))
+
+(define-grammar goptional
+  (:foo)
+  S
+  ((S ((:foo) :present)
+      (() :absent))))

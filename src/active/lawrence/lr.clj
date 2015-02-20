@@ -306,8 +306,9 @@
                                                                   attribution (production-attribution (item-production item))
                                                                   attribute-value `(~attribution
                                                                                     ~@(reverse (take rhs-length attribute-names)))]
-                                                 
-                                                              `(->RetVal ~lhs ~rhs-length ~attribute-value ~input-name)))
+                                                              (if (zero? rhs-length)
+                                                                `(~(parse-bar-name id lhs) ~attribute-value ~@attribute-names ~input-name)
+                                                                `(->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
                                                           `(c/error '~(parse-name id) "parse error")))]
                    (if (empty? ~input-name)
                      (reduce#)
@@ -339,7 +340,7 @@
                                       ~@(if (initial? closure grammar)
                                           [`(= ~(grammar-start grammar) (.-lhs ~retval-name))
                                            `(if (empty? (.-input ~retval-name))
-                                              (.-attribute-value ~retval-name)
+                                              ~retval-name
                                               (c/error '~(parse-bar-name id symbol) "parse error" ~symbol))]
                                           [])
 
@@ -387,7 +388,8 @@
                 ~@fns
                 (defn ~'parse
                   [input#]
-                  (~(parse-name 0) input#)))]
+                  (.-attribute-value
+                   (~(parse-name 0) input#))))]
         (pprint form)
         (flush)))))
 

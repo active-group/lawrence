@@ -344,6 +344,7 @@
                                           [])
 
                                       :else 
+                                      ;;; FIXME: optimize for when next-nonterms only has 1 element
                                       (case (.lhs ~retval-name)
                                         ~@(mapcat (fn [nt]
                                                     [nt

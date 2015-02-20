@@ -327,10 +327,11 @@
                                 retval-name `retval#]
                             `(defn- ~(parse-bar-name id symbol)
                                [attribute-value# ~@attribute-names ~input-name]
-                               (let [~retval-name (~(parse-name (state-id next-state))
-                                                   attribute-value#
-                                                   ~@(take (- (active next-state) 1) attribute-names)
-                                                   ~input-name)]
+                               (let [~(with-meta retval-name {:tag 'active.lawrence.runtime.RetVal})
+                                     (~(parse-name (state-id next-state))
+                                      attribute-value#
+                                      ~@(take (- (active next-state) 1) attribute-names)
+                                      ~input-name)]
                                  ~(if (empty? next-nonterms)
                                     `(dec-dot ~retval-name)
                                     `(cond
@@ -377,7 +378,8 @@
                           :lr compute-lr-closure
                           :slr compute-slr-closure)
         fns (generate-ds-parse-functions grammar k compute-closure)]
-    (binding [*out* writer]
+    (binding [*out* writer
+              *print-meta* true]
       (doseq [form 
               `((ns ~ns-name
                   (:require 
@@ -386,10 +388,11 @@
                    ~@reqs))
                 (declare ~@(map second fns))
                 ~@fns
-                (defn ~'parse
-                  [input#]
-                  (.-attribute-value
-                   (~(parse-name 0) input#))))]
+                ~(let [input-name `input#]
+                   `(defn ~'parse
+                     [~input-name]
+                     (let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
+                     (.-attribute-value retval#)))))]
         (pprint form)
         (flush)))))
 

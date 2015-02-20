@@ -80,7 +80,9 @@
        ((AN C E) $1))))
 
 (define-grammar goptional
-  (:foo)
+  (:foo :bar)
   S
-  ((S ((:foo) :present)
+  ((S ((:bar O) $2))
+   (O ((:foo) :present)
       (() :absent))))
+

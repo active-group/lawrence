@@ -30,8 +30,9 @@
                          attribution (production-attribution (item-production item))
                          attribute-value (apply-attribution attribution
                                                             (reverse (take rhs-length attribute-values)))]
-                     
-                     (->RetVal lhs rhs-length attribute-value input))
+                     (if (zero? rhs-length)
+                       (ds-parse-bar grammar k compute-closure closure lhs attribute-value attribute-values input)
+                       (->RetVal lhs rhs-length attribute-value input)))
                    (c/error `ds-parse "parse error")))]
     (if (empty? input)
       (reduce)
@@ -47,6 +48,7 @@
 
 (defn ds-parse-bar
   ^RetVal [grammar k compute-closure closure symbol attribute-value attribute-values input]
+  {:pre [(= (active closure) (count attribute-values))]}
   (let [next-state (goto closure symbol)
         retval (ds-parse grammar k compute-closure
                          next-state

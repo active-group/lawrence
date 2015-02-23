@@ -398,7 +398,7 @@
                         [~input-name]
                         (let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
                           (.-attribute-value retval#)))))]
-          (pprint form))))))
+          (prn form))))))
 
 ; Conflict handling
 

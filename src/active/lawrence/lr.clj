@@ -260,10 +260,17 @@
                                           (accept closure))
         non-empty-case
         `(case (pair-token (first ~input-name))
-           ~@(mapcat (fn [item]
-                       [(first (item-lookahead item))
-                        (generate-matching item)])
-                     non-empty)
+           ~@(loop [items (seq non-empty)
+                    lookaheads #{} ; case can't handle duplicates
+                    cases []]
+               (if (empty? items)
+                 cases
+                 (let [item (first items)
+                       la (first (item-lookahead item))]
+                   (if (contains? lookaheads la)
+                     (recur (rest items) lookaheads cases)
+                     (recur (rest items) (conj lookaheads la)
+                            (concat cases [la (generate-matching item)]))))))
            ~else)]
     (if (empty? empty)
       non-empty-case

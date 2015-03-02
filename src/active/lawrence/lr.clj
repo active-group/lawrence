@@ -258,6 +258,8 @@
   
   (let [[empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item))) 
                                           (accept closure))
+        empty (sort item<? empty)
+        non-empty (sort item<? non-empty)
         non-empty-case
         `(case (pair-token (first ~input-name))
            ~@(loop [items (seq non-empty)
@@ -577,7 +579,7 @@
   (loop [ts1 (seq ts1)
          ts2 (seq ts2)]
     (cond 
-     (empty? ts1) (not-empty ts2)
+     (empty? ts1) (not (empty? ts2))
      (empty? ts2) false
      (< (first ts1) (first ts2)) true
      (> (first ts1) (first ts2)) false

@@ -9,7 +9,7 @@
 
 (defn find-lookahead-item
   [item-set k input]
-  (loop [item-set (seq item-set)]
+  (loop [item-set (sort item<? item-set)]
     (if (empty? item-set)
       false
       (let [item (first item-set)]

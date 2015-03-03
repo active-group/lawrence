@@ -261,7 +261,7 @@
         empty (sort item<? empty)
         non-empty (sort item<? non-empty)
         non-empty-case
-        `(case (pair-token (first ~input-name))
+        `(~'case (~'pair-token (~'first ~input-name))
            ~@(loop [items (seq non-empty)
                     lookaheads #{} ; case can't handle duplicates
                     cases []]
@@ -276,7 +276,7 @@
            ~else)]
     (if (empty? empty)
       non-empty-case
-      `(if (empty? ~input-name)
+      `(~'if (~'empty? ~input-name)
          ~(generate-matching (first empty))
          ~non-empty-case))))
 
@@ -302,16 +302,16 @@
         id (state-id state)
         closure (compute-closure state grammar k)
         attribute-names (map (fn [i]
-                               (symbol (str "attribute-value-" i)))
+                               (symbol (str "av-" i)))
                              (range 0 (active state)))
         next-terms (next-terminals closure grammar)
         next-nonterms (next-nonterminals closure grammar)
         next-symbols (concat next-terms (next-nonterminals closure grammar))
         input-name `input#
         pair-name `pair#
-        parse `(defn- ~(parse-name id)
+        parse `(~'defn- ~(parse-name id)
                  [~@attribute-names ~input-name]
-                 (let [reduce# (fn []
+                 (~'let [reduce# (~'fn []
                                  ~(make-lookahead-matcher closure k input-name
                                                           (fn [item]
                                                             (let [rhs-length (count (item-rhs item))
@@ -321,46 +321,46 @@
                                                                                     ~@(reverse (take rhs-length attribute-names)))]
                                                               (if (zero? rhs-length)
                                                                 `(~(parse-bar-name id lhs) ~attribute-value ~@attribute-names ~input-name)
-                                                                `(->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
+                                                                `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
                                                           `(c/error '~(parse-name id) "parse error")))]
-                   (if (empty? ~input-name)
+                   (~'if (~'empty? ~input-name)
                      (reduce#)
-                     (let [~pair-name (first ~input-name)
-                           symbol# (pair-token ~pair-name)]
-                       (case symbol#
+                     (~'let [~pair-name (~'first ~input-name)
+                           symbol# (~'pair-token ~pair-name)]
+                       (~'case symbol#
                          ~@(mapcat (fn [t]
                                      [t `(~(parse-bar-name id t)
-                                          (pair-attribute-value ~pair-name) 
+                                          (~'pair-attribute-value ~pair-name) 
                                           ~@attribute-names
-                                          (rest ~input-name))])
+                                          (~'rest ~input-name))])
                                    next-terms)
                          (reduce#))))))
         parse-bars (map (fn [symbol]
                           (let [next-state (goto closure symbol)
                                 retval-name `retval#]
-                            `(defn- ~(parse-bar-name id symbol)
-                               [attribute-value# ~@attribute-names ~input-name]
-                               (let [~(with-meta retval-name {:tag 'active.lawrence.runtime.RetVal})
+                            `(~'defn- ~(parse-bar-name id symbol)
+                               [av# ~@attribute-names ~input-name]
+                               (~'let [~(with-meta retval-name {:tag 'RetVal})
                                      (~(parse-name (state-id next-state))
-                                      attribute-value#
+                                      av#
                                       ~@(take (- (active next-state) 1) attribute-names)
                                       ~input-name)]
                                  ~(if (empty? next-nonterms)
-                                    `(dec-dot ~retval-name)
-                                    `(cond
-                                      (> (.dot ~retval-name) 1) 
-                                      (dec-dot ~retval-name)
+                                    `(~'dec-dot ~retval-name)
+                                    `(~'cond
+                                      (~'> (.dot ~retval-name) 1) 
+                                      (~'dec-dot ~retval-name)
                         
                                       ~@(if (initial? closure grammar)
-                                          [`(= ~(grammar-start grammar) (.-lhs ~retval-name))
-                                           `(if (empty? (.-input ~retval-name))
+                                          [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
+                                           `(~'if (~'empty? (.-input ~retval-name))
                                               ~retval-name
                                               (c/error '~(parse-bar-name id symbol) "parse error" ~symbol))]
                                           [])
 
                                       :else 
                                       ;;; FIXME: optimize for when next-nonterms only has 1 element
-                                      (case (.lhs ~retval-name)
+                                      (~'case (.lhs ~retval-name)
                                         ~@(mapcat (fn [nt]
                                                     [nt
                                                      `(~(parse-bar-name id nt)
@@ -395,17 +395,18 @@
       (binding [*out* writer
                 *print-meta* true]
         (doseq [form 
-                `((ns ~ns-name
+                `((~'ns ~ns-name
                     (:require 
                      [active.clojure.condition :as ~'c]
                      [active.lawrence.runtime :refer :all]
-                     ~@reqs))
-                  (declare ~@(map second fns))
+                     ~@reqs)
+                    (:import [active.lawrence.runtime ~'RetVal]))
+                  (~'declare ~@(map second fns))
                   ~@fns
                   ~(let [input-name `input#]
-                     `(defn ~'parse
+                     `(~'defn ~'parse
                         [~input-name]
-                        (let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
+                        (~'let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
                           (.-attribute-value retval#)))))]
           (prn form))))))
 

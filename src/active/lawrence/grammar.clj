@@ -155,7 +155,7 @@
                             (concat [`[(make-production '(~'$start (~?start-symbol) ~'identity)
                                                         ~nonterminal-offset
                                                         ~(vector (symbol-table ?start-symbol))
-                                                        'identity)]]
+                                                        '~'identity)]]
                                     (map (fn [lhs]
                                            (let [lhs-rules
                                                  (filter (fn [rule]
@@ -169,7 +169,7 @@
                                                        `(make-production '~(cons lhs spec)
                                                                          ~lhs-index
                                                                          ~(mapv symbol-table rhs)
-                                                                         '(fn [~@(map-indexed (fn [i _]
+                                                                         '(~'fn [~@(map-indexed (fn [i _]
                                                                                                (symbol (str "$" (+ 1 i))))
                                                                                              rhs)]
                                                                            ~@body))))

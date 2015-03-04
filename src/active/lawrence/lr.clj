@@ -260,20 +260,28 @@
                                           (accept closure))
         empty (sort item<? empty)
         non-empty (sort item<? non-empty)
-        non-empty-case
-        `(~'case (~'pair-token (~'first ~input-name))
-           ~@(loop [items (seq non-empty)
-                    lookaheads #{} ; case can't handle duplicates
-                    cases []]
-               (if (empty? items)
-                 cases
-                 (let [item (first items)
-                       la (first (item-lookahead item))]
-                   (if (contains? lookaheads la)
-                     (recur (rest items) lookaheads cases)
-                     (recur (rest items) (conj lookaheads la)
-                            (concat cases [la (generate-matching item)]))))))
-           ~else)]
+        non-empty-pairs (loop [items (seq non-empty)
+                               lookaheads #{} ; case can't handle duplicates
+                               cases []]
+                          (if (empty? items)
+                            cases
+                            (let [item (first items)
+                                  la (first (item-lookahead item))]
+                              (if (contains? lookaheads la)
+                                (recur (rest items) lookaheads cases)
+                                (recur (rest items) (conj lookaheads la)
+                                       (conj cases [la (generate-matching item)]))))))
+        
+        non-empty-case `(~'case (~'pair-token (~'first ~input-name))
+                          ;; group by lookahead
+                          ~@(mapcat (fn [entry]
+                                      [(let [lis (map first (val entry))]
+                                         (if (empty? (rest lis))
+                                           (first lis)
+                                           lis))
+                                       (key entry)])
+                                    (group-by second non-empty-pairs))
+                          ~else)]
     (if (empty? empty)
       non-empty-case
       `(~'if (~'empty? ~input-name)

@@ -384,7 +384,7 @@
                        [~nonterm-name ~av-name ~@attribute-names ~input-name]
                        (~'let [~(with-meta retval-name {:tag 'RetVal})
                                ;; FIXME: group by cases
-                               (~'case ~nonterm-name
+                               (~'case (~'int ~nonterm-name)
                                  ;; FIXME: optimize for when next-nonterms only has 1 element
                                  ~@(doall ; note that parse-name has a side effect
                                     (mapcat (fn [nonterm]

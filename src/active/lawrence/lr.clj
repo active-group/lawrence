@@ -249,15 +249,22 @@
           (= (grammar-start grammar) (item-lhs item)))
         state))
 
+
 ; Code generation
+
+(def ^:dynamic *display-item-closures* false)
+(def ^:dynamic *trace-states* false)
+
+(declare trace-state check-for-reduce-reduce-conflict check-for-shift-reduce-conflict)
 
 (defn make-lookahead-matcher
   [closure k input-name generate-matching else]
   ;; FIXME: k > 1
   (assert (= k 1)) 
   
-  (let [[empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item))) 
-                                          (accept closure))
+  (let [accept-items (accept closure)
+        [empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item))) 
+                                          accept-items)
         empty (sort item<? empty)
         non-empty (sort item<? non-empty)
         non-empty-pairs (loop [items (seq non-empty)
@@ -387,7 +394,15 @@
            todo (list start-state)
            code []]
       (if (empty? todo)
-        code
+        (do
+          (when *trace-states*
+            (doseq [[state index] (sort-by second state-map)]
+              (let [closure (compute-closure state grammar k)
+                    accept-items (accept closure)]
+                (trace-state 1 closure index grammar)
+                (check-for-reduce-reduce-conflict closure accept-items grammar k)
+                (check-for-shift-reduce-conflict closure accept-items grammar k))))
+          code)
         (let [[new-code state-map new-todos] (make-ds-parse state-map grammar k compute-closure (first todo))]
           (recur state-map
                  (concat (rest todo) new-todos)
@@ -472,12 +487,9 @@
                   (display-conflict "Shift-reduce" closure item conflict-item
                                     grammar))))))))))
 
-(def ^:dynamic *display-item-closures* false)
-(def ^:dynamic *trace-state* nil)
-
 (defn tracing-states
   [thunk]
-  (binding [*trace-state* (atom 0)]
+  (binding [*trace-states* true]
     (thunk)))
 
 (declare display-item display-closure display-items)
@@ -505,24 +517,24 @@
 
 (defn display-items
   [items grammar]
-  (loop [items (seq items)]
-    (if (not-empty items)
-	(let [item (first items)]
-          (let [[this-items other-items] (partition-coll
-                                          (fn [other-item]
-                                            (and (= (item-production item)
-                                                    (item-production other-item))
-                                                 (= (item-position item)
-                                                    (item-position other-item))))
-                                          items)]
-            (display-item item grammar)
-            (println " "
-                     (mapv (fn [item]
-                             (map (fn [s]
-                                    (grammar-symbol->name s grammar))
-                                  (item-lookahead item)))
-                           this-items))
-            (recur other-items))))))
+  (loop [items (sort-by item-lhs (seq items))]
+    (when (not-empty items)
+      (let [item (first items)]
+        (let [[this-items other-items] (partition-coll
+                                        (fn [other-item]
+                                          (and (= (item-production item)
+                                                  (item-production other-item))
+                                               (= (item-position item)
+                                                  (item-position other-item))))
+                                        items)]
+          (display-item item grammar)
+          (println " "
+                   (mapv (fn [item]
+                           (map (fn [s]
+                                  (grammar-symbol->name s grammar))
+                                (item-lookahead item)))
+                         this-items))
+          (recur other-items))))))
 
 (defn display-item
   [item grammar]
@@ -542,12 +554,9 @@
      (print " ."))))
 
 (defn trace-state
-  [trace-level closure grammar]
-  (when *trace-state*
-    (do
-      (println "State " @*trace-state*)
-      (display-closure closure true grammar)
-      (swap! *trace-state* inc))))
+  [trace-level closure index grammar]
+  (println "State " index)
+  (display-closure closure true grammar))
 
 (declare display-trace-input)
 

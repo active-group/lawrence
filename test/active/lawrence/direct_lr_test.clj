@@ -9,7 +9,7 @@
   "Convert list of [token attribute-value] vectors to input."
   [g vs]
   (map (fn [[t av]]
-         (make-pair (grammar-symbol->name t g)
+         (make-pair (grammar-name->symbol t g)
                     av))
        vs))
 

@@ -296,8 +296,8 @@
          ~non-empty-case))))
 
 (defn- parse-bar-name
-  [id sym]
-  (symbol (str "ds-parse-bar-" id "-" sym)))
+  [id]
+  (symbol (str "ds-parse-bar-" id)))
 
 (defn- parse-name
   [id]
@@ -322,11 +322,11 @@
         next-terms (next-terminals closure grammar)
         next-nonterms (next-nonterminals closure grammar)
         next-symbols (concat next-terms (next-nonterminals closure grammar))
-        input-name `input#
-        pair-name `pair#
+        input-name `in#
+        pair-name `p#
         make-parse-bar (fn [symbol av-name]
                          (let [next-state (goto closure symbol)
-                               retval-name `retval#]
+                               retval-name `rv#]
                            `(~'let [~(with-meta retval-name {:tag 'RetVal})
                                     (~(parse-name (state-id next-state))
                                      ~av-name
@@ -342,21 +342,17 @@
                                        [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                         `(~'if (~'empty? (.-input ~retval-name))
                                            ~retval-name
-                                           (c/error '~(parse-bar-name id symbol) "parse error" ~symbol))]
+                                           (c/error '~(parse-bar-name id) "parse error" ~symbol))]
                                        [])
 
                                    :else 
-                                      ;;; FIXME: optimize for when next-nonterms only has 1 element
-                                   (~'case (.lhs ~retval-name)
-                                     ~@(mapcat (fn [nt]
-                                                 [nt
-                                                  `(~(parse-bar-name id nt)
-                                                    (.-attribute-value ~retval-name)
-                                                    ~@attribute-names
-                                                    (.-input ~retval-name))])
-                                               next-nonterms)))))))
+                                   (~(parse-bar-name id)
+                                    (.lhs ~retval-name) (.-attribute-value ~retval-name)
+                                    ~@attribute-names
+                                    (.-input ~retval-name)))))))
         parse `(~'defn- ~(parse-name id)
                  [~@attribute-names ~input-name]
+                 ;; FIXME: lift this to the top level
                  (~'let [reduce# (~'fn []
                                    ~(make-lookahead-matcher closure k input-name
                                                             (fn [item]
@@ -366,10 +362,11 @@
                                                                     attribute-value `(~attribution
                                                                                       ~@(reverse (take rhs-length attribute-names)))]
                                                                 (if (zero? rhs-length)
-                                                                  `(~(parse-bar-name id lhs) ~attribute-value ~@attribute-names ~input-name)
+                                                                  `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~input-name)
                                                                   `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
                                                             `(c/error '~(parse-name id) "parse error")))]
                    (~'if (~'empty? ~input-name)
+                     ;; FIXME: the reduce invocation knows whether input is empty or not
                      (reduce#)
                      (~'let [~pair-name (~'first ~input-name)
                              symbol# (~'pair-token ~pair-name)]
@@ -379,13 +376,41 @@
                                    next-terms)
                          (reduce#))))))
 
-        parse-bars (map (fn [symbol]
-                          (let [av-name `av#]
-                            `(~'defn- ~(parse-bar-name id symbol)
-                               [~av-name ~@attribute-names ~input-name]
-                               ~(make-parse-bar symbol av-name))))
-                        next-nonterms)
-        code (vec (cons parse parse-bars))] ; strictness because state
+        parse-bar (let [av-name `av#
+                        retval-name `rv#
+                        nonterm-name `nt#]
+                    `(~'defn- ~(parse-bar-name id)
+                       [~nonterm-name ~av-name ~@attribute-names ~input-name]
+                       (~'let [~(with-meta retval-name {:tag 'RetVal})
+                               ;; FIXME: group by cases
+                               (~'case ~nonterm-name
+                                 ;; FIXME: optimize for when next-nonterms only has 1 element
+                                 ~@(mapcat (fn [nonterm]
+                                             (let [next-state (goto closure nonterm)]
+                                               [nonterm
+                                                `(~(parse-name (state-id next-state))
+                                                  ~av-name
+                                                  ~@(take (- (active next-state) 1) attribute-names)
+                                                  ~input-name)]))
+                                           next-nonterms))]
+                         ~(if (empty? next-nonterms)
+                            `(~'dec-dot ~retval-name)
+                            `(~'cond
+                              (~'> (.dot ~retval-name) 1) 
+                              (~'dec-dot ~retval-name)
+                               
+                              ~@(if (initial? closure grammar)
+                                  [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
+                                   `(~'if (~'empty? (.-input ~retval-name))
+                                      ~retval-name
+                                      (c/error '~(parse-bar-name id) "parse error" ~nonterm-name))]
+                                  [])
+                               
+                              :else 
+                              (recur  (.lhs ~retval-name) (.-attribute-value ~retval-name)
+                                     ~@attribute-names
+                                     (.-input ~retval-name)))))))
+        code [parse parse-bar]]
     [code @state-map-atom @todo]))
 
 (defn generate-ds-parse-functions

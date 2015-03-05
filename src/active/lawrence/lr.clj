@@ -324,32 +324,6 @@
         next-symbols (concat next-terms (next-nonterminals closure grammar))
         input-name `in#
         pair-name `p#
-        make-parse-bar (fn [symbol av-name]
-                         (let [next-state (goto closure symbol)
-                               retval-name `rv#]
-                           `(~'let [~(with-meta retval-name {:tag 'RetVal})
-                                    (~(parse-name (state-id next-state))
-                                     ~av-name
-                                     ~@(take (- (active next-state) 1) attribute-names)
-                                     ~input-name)]
-                              ~(if (empty? next-nonterms)
-                                 `(~'dec-dot ~retval-name)
-                                 `(~'cond
-                                   (~'> (.dot ~retval-name) 1) 
-                                   (~'dec-dot ~retval-name)
-                        
-                                   ~@(if (initial? closure grammar)
-                                       [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
-                                        `(~'if (~'empty? (.-input ~retval-name))
-                                           ~retval-name
-                                           (c/error '~(parse-bar-name id) "parse error" ~symbol))]
-                                       [])
-
-                                   :else 
-                                   (~(parse-bar-name id)
-                                    (.lhs ~retval-name) (.-attribute-value ~retval-name)
-                                    ~@attribute-names
-                                    (.-input ~retval-name)))))))
         parse `(~'defn- ~(parse-name id)
                  [~@attribute-names ~input-name]
                  ;; FIXME: lift this to the top level
@@ -372,7 +346,32 @@
                              symbol# (~'pair-token ~pair-name)]
                        (~'case symbol#
                          ~@(mapcat (fn [t]
-                                     [t (make-parse-bar t `(~'pair-attribute-value ~pair-name))])
+                                     [t 
+                                      (let [next-state (goto closure t)
+                                            retval-name `rv#]
+                                        `(~'let [~(with-meta retval-name {:tag 'RetVal})
+                                                 (~(parse-name (state-id next-state))
+                                                  (~'pair-attribute-value ~pair-name)
+                                                  ~@(take (- (active next-state) 1) attribute-names)
+                                                  (~'rest ~input-name))]
+                                           ~(if (empty? next-nonterms)
+                                              `(~'dec-dot ~retval-name)
+                                              `(~'cond
+                                                (~'> (.dot ~retval-name) 1) 
+                                                (~'dec-dot ~retval-name)
+                        
+                                                ~@(if (initial? closure grammar)
+                                                    [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
+                                                     `(~'if (~'empty? (.-input ~retval-name))
+                                                        ~retval-name
+                                                        (c/error '~(parse-bar-name id) "parse error" ~t))]
+                                                    [])
+
+                                                :else 
+                                                (~(parse-bar-name id)
+                                                 (.lhs ~retval-name) (.-attribute-value ~retval-name)
+                                                 ~@attribute-names
+                                                 (.-input ~retval-name))))))])
                                    next-terms)
                          (reduce#))))))
 

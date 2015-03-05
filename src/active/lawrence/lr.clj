@@ -281,13 +281,14 @@
         
         non-empty-case `(~'case (~'pair-token (~'first ~input-name))
                           ;; group by lookahead
-                          ~@(mapcat (fn [entry]
-                                      [(let [lis (map first (val entry))]
-                                         (if (empty? (rest lis))
-                                           (first lis)
-                                           lis))
-                                       (key entry)])
-                                    (group-by second non-empty-pairs))
+                          ~@(doall
+                             (mapcat (fn [entry]
+                                       [(let [lis (map first (val entry))]
+                                          (if (empty? (rest lis))
+                                            (first lis)
+                                            lis))
+                                        (key entry)])
+                                     (group-by second non-empty-pairs)))
                           ~else)]
     (if (empty? empty)
       non-empty-case
@@ -345,34 +346,35 @@
                      (~'let [~pair-name (~'first ~input-name)
                              symbol# (~'pair-token ~pair-name)]
                        (~'case symbol#
-                         ~@(mapcat (fn [t]
-                                     [t 
-                                      (let [next-state (goto closure t)
-                                            retval-name `rv#]
-                                        `(~'let [~(with-meta retval-name {:tag 'RetVal})
-                                                 (~(parse-name (state-id next-state))
-                                                  (~'pair-attribute-value ~pair-name)
-                                                  ~@(take (- (active next-state) 1) attribute-names)
-                                                  (~'rest ~input-name))]
-                                           ~(if (empty? next-nonterms)
-                                              `(~'dec-dot ~retval-name)
-                                              `(~'cond
-                                                (~'> (.dot ~retval-name) 1) 
-                                                (~'dec-dot ~retval-name)
+                         ~@(doall
+                            (mapcat (fn [t]
+                                      [t 
+                                       (let [next-state (goto closure t)
+                                             retval-name `rv#]
+                                         `(~'let [~(with-meta retval-name {:tag 'RetVal})
+                                                  (~(parse-name (state-id next-state))
+                                                   (~'pair-attribute-value ~pair-name)
+                                                   ~@(take (- (active next-state) 1) attribute-names)
+                                                   (~'rest ~input-name))]
+                                            ~(if (empty? next-nonterms)
+                                               `(~'dec-dot ~retval-name)
+                                               `(~'cond
+                                                 (~'> (.dot ~retval-name) 1) 
+                                                 (~'dec-dot ~retval-name)
                         
-                                                ~@(if (initial? closure grammar)
-                                                    [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
-                                                     `(~'if (~'empty? (.-input ~retval-name))
-                                                        ~retval-name
-                                                        (c/error '~(parse-bar-name id) "parse error" ~t))]
-                                                    [])
+                                                 ~@(if (initial? closure grammar)
+                                                     [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
+                                                      `(~'if (~'empty? (.-input ~retval-name))
+                                                         ~retval-name
+                                                         (c/error '~(parse-bar-name id) "parse error" ~t))]
+                                                     [])
 
-                                                :else 
-                                                (~(parse-bar-name id)
-                                                 (.lhs ~retval-name) (.-attribute-value ~retval-name)
-                                                 ~@attribute-names
-                                                 (.-input ~retval-name))))))])
-                                   next-terms)
+                                                 :else 
+                                                 (~(parse-bar-name id)
+                                                  (.lhs ~retval-name) (.-attribute-value ~retval-name)
+                                                  ~@attribute-names
+                                                  (.-input ~retval-name))))))])
+                                    next-terms))
                          (reduce#))))))
 
         parse-bar (let [av-name `av#
@@ -384,14 +386,15 @@
                                ;; FIXME: group by cases
                                (~'case ~nonterm-name
                                  ;; FIXME: optimize for when next-nonterms only has 1 element
-                                 ~@(mapcat (fn [nonterm]
-                                             (let [next-state (goto closure nonterm)]
-                                               [nonterm
-                                                `(~(parse-name (state-id next-state))
-                                                  ~av-name
-                                                  ~@(take (- (active next-state) 1) attribute-names)
-                                                  ~input-name)]))
-                                           next-nonterms))]
+                                 ~@(doall ; note that parse-name has a side effect
+                                    (mapcat (fn [nonterm]
+                                              (let [next-state (goto closure nonterm)]
+                                                [nonterm
+                                                 `(~(parse-name (state-id next-state))
+                                                   ~av-name
+                                                   ~@(take (- (active next-state) 1) attribute-names)
+                                                   ~input-name)]))
+                                            next-nonterms)))]
                          ~(if (empty? next-nonterms)
                             `(~'dec-dot ~retval-name)
                             `(~'cond

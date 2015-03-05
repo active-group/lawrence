@@ -81,7 +81,7 @@
              k
              (case method
                :lr compute-lr-closure
-                                   :slr compute-slr-closure)
+               :slr compute-slr-closure)
              #{(make-item (grammar-start-production grammar) 0 '())}
              '()
              input)))

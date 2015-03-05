@@ -457,7 +457,7 @@
                   ~(let [input-name `input#]
                      `(~'defn ~'parse
                         [~input-name]
-                        (~'let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) ~input-name)]
+                        (~'let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) (~'seq ~input-name))]
                           (.-attribute-value retval#)))))]
           (prn form))))))
 

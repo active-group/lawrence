@@ -182,7 +182,7 @@
                      ~(get symbol-table :$error)
                      ~(get symbol-table '$start)
                      ~productions-by-lhs
-                     '~symbol-table
+                     '~(set/map-invert symbol-table)
                      ~?terminal-attribution))))
 
 ; nullable computation

@@ -21,6 +21,7 @@
 		       error start
 		       productions-by-lhs
 		       symbol->name-procedure
+		       name->symbol-procedure
 		       terminal-attribution
 		       properties)
   grammar?
@@ -33,6 +34,7 @@
    start grammar-start
    productions-by-lhs grammar-productions-by-lhs
    symbol->name-procedure grammar-symbol->name-procedure
+   name->symbol-procedure grammar-name->symbol-procedure
    terminal-attribution grammar-terminal-attribution
    properties grammar-properties])
 
@@ -52,6 +54,7 @@
    error start
    productions-by-lhs ; vector, indexed by normalized non-terminal
    symbol->name-procedure
+   name->symbol-procedure
    terminal-attribution]
   (let [number-of-nonterminals (count nonterminals)
         number-of-terminals (count terminals)
@@ -64,6 +67,7 @@
 			 error start
 			 productions-by-lhs
 			 symbol->name-procedure
+			 name->symbol-procedure
 			 terminal-attribution
 			 (atom {}))))
 
@@ -79,9 +83,13 @@
   [symbol grammar]
   ((grammar-symbol->name-procedure grammar) symbol))
 
+(defn grammar-name->symbol
+  [symbol grammar]
+  ((grammar-name->symbol-procedure grammar) symbol))
+
 (defmacro terminal
   [?grammar ?terminal]
-  (grammar-symbol->name ?terminal (eval ?grammar)))
+  ((grammar-name->symbol-procedure (eval ?grammar)) ?terminal))
 
 (defn terminal?
   [symbol grammar]
@@ -183,6 +191,7 @@
                      ~(get symbol-table '$start)
                      ~productions-by-lhs
                      '~(set/map-invert symbol-table)
+                     '~symbol-table
                      ~?terminal-attribution))))
 
 ; nullable computation

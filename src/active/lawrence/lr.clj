@@ -84,7 +84,7 @@
                                       (make-item production 0 la))
                                     (sequence-first lookahead-suffix k grammar)))
                                  (grammar-productions-with-lhs symbol grammar))))
-        
+
         next-predict (fn [item-set-0]
                        (loop [item-set (seq item-set-0)
                               predict-set item-set-0]
@@ -128,7 +128,7 @@
                                          (map (fn [lookahead]
                                                 (make-item production 0 lookahead))
                                               (nonterminal-follow (production-lhs production) k grammar))))]
-    
+
     (apply set/union (map production->slr-predict-items productions))))
 
 (defn compute-slr-closure
@@ -168,7 +168,7 @@
         initial-predict-lhses (sequences-initial-nonterminals (map item-rhs-rest state) grammar)
         ;; (dummy (begin (write initial-predict-lhses) (newline)))
         predict-lhses (set (mapcat get-predict-lhses initial-predict-lhses))
-        
+
         ;; (dummy (begin (write predict-lhses) (newline)))
         predict-productions (mapcat (fn [lhs]
                                       (grammar-productions-with-lhs lhs grammar))
@@ -260,10 +260,10 @@
 (defn make-lookahead-matcher
   [closure k input-name generate-matching else]
   ;; FIXME: k > 1
-  (assert (= k 1)) 
-  
+  (assert (= k 1))
+
   (let [accept-items (accept closure)
-        [empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item))) 
+        [empty non-empty] (partition-coll (fn [item] (empty? (item-lookahead item)))
                                           accept-items)
         empty (sort item<? empty)
         non-empty (sort item<? non-empty)
@@ -278,7 +278,7 @@
                                 (recur (rest items) lookaheads cases)
                                 (recur (rest items) (conj lookaheads la)
                                        (conj cases [la (generate-matching item)]))))))
-        
+
         non-empty-case `(~'case (~'pair-token (~'first ~input-name))
                           ;; group by lookahead
                           ~@(doall
@@ -348,7 +348,7 @@
                        (~'case symbol#
                          ~@(doall
                             (mapcat (fn [t]
-                                      [t 
+                                      [t
                                        (let [next-state (goto closure t)
                                              retval-name `rv#]
                                          `(~'let [~(with-meta retval-name {:tag 'RetVal})
@@ -359,9 +359,9 @@
                                             ~(if (empty? next-nonterms)
                                                `(~'dec-dot ~retval-name)
                                                `(~'cond
-                                                 (~'> (.dot ~retval-name) 1) 
+                                                 (~'> (.dot ~retval-name) 1)
                                                  (~'dec-dot ~retval-name)
-                        
+
                                                  ~@(if (initial? closure grammar)
                                                      [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                                       `(~'if (~'empty? (.-input ~retval-name))
@@ -369,7 +369,7 @@
                                                          (c/error '~(parse-bar-name id) "parse error" ~t))]
                                                      [])
 
-                                                 :else 
+                                                 :else
                                                  (~(parse-bar-name id)
                                                   (.lhs ~retval-name) (.-attribute-value ~retval-name)
                                                   ~@attribute-names
@@ -398,17 +398,17 @@
                          ~(if (empty? next-nonterms)
                             `(~'dec-dot ~retval-name)
                             `(~'cond
-                              (~'> (.dot ~retval-name) 1) 
+                              (~'> (.dot ~retval-name) 1)
                               (~'dec-dot ~retval-name)
-                               
+
                               ~@(if (initial? closure grammar)
                                   [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                    `(~'if (~'empty? (.-input ~retval-name))
                                       ~retval-name
                                       (c/error '~(parse-bar-name id) "parse error" ~nonterm-name))]
                                   [])
-                               
-                              :else 
+
+                              :else
                               (recur  (.lhs ~retval-name) (.-attribute-value ~retval-name)
                                      ~@attribute-names
                                      (.-input ~retval-name)))))))
@@ -444,10 +444,13 @@
         fns (generate-ds-parse-functions grammar k compute-closure)]
     (with-open [writer (clojure.java.io/writer writer-arg)]
       (binding [*out* writer
-                *print-meta* true]
-        (doseq [form 
+                *print-meta* true
+                *print-length* nil
+                *print-level* nil]
+
+        (doseq [form
                 `((~'ns ~ns-name
-                    (:require 
+                    (:require
                      [active.clojure.condition :as ~'c]
                      [active.lawrence.runtime :refer :all]
                      ~@reqs)
@@ -497,7 +500,7 @@
                    (cons [(first items) conflict-item] done))))
         (recur (rest items) done)))))
 
-(defn check-for-shift-reduce-conflict 
+(defn check-for-shift-reduce-conflict
   [closure accept-items grammar k]
   (let [done (atom '())]
     (doseq [item closure]
@@ -624,10 +627,9 @@
   [ts1 ts2]
   (loop [ts1 (seq ts1)
          ts2 (seq ts2)]
-    (cond 
+    (cond
      (empty? ts1) (not (empty? ts2))
      (empty? ts2) false
      (< (first ts1) (first ts2)) true
      (> (first ts1) (first ts2)) false
      :else (recur (rest ts1) (rest ts2)))))
-

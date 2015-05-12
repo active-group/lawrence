@@ -339,7 +339,7 @@
                                                                 (if (zero? rhs-length)
                                                                   `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~input-name)
                                                                   `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
-                                                            `(c/error '~(parse-name id) "parse error")))]
+                                                            `(~'parse-error "parse error" ~input-name)))]
                    (~'if (~'empty? ~input-name)
                      ;; FIXME: the reduce invocation knows whether input is empty or not
                      (reduce#)
@@ -366,7 +366,7 @@
                                                      [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                                       `(~'if (~'empty? (.-input ~retval-name))
                                                          ~retval-name
-                                                         (c/error '~(parse-bar-name id) "parse error" ~t))]
+                                                         (~'parse-error "input beyond EOF" (.-input ~retval-name)))]
                                                      [])
 
                                                  :else
@@ -405,7 +405,7 @@
                                   [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                    `(~'if (~'empty? (.-input ~retval-name))
                                       ~retval-name
-                                      (c/error '~(parse-bar-name id) "parse error" ~nonterm-name))]
+                                      (~'parse-error "input beyond EOF" (.-input ~retval-name)))]
                                   [])
 
                               :else
@@ -451,7 +451,6 @@
         (doseq [form
                 `((~'ns ~ns-name
                     (:require
-                     [active.clojure.condition :as ~'c]
                      [active.lawrence.runtime :refer :all]
                      ~@reqs)
                     (:import [active.lawrence.runtime ~'RetVal]))

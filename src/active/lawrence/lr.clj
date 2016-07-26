@@ -239,9 +239,10 @@
 
 (defn find-eoi-lookahead-item
   [accept-items]
-  (first (fn [item]
-	   (empty? (item-lookahead item)))
-	 accept-items))
+  (boolean
+   (some (fn [item]
+           (empty? (item-lookahead item)))
+         accept-items)))
 
 (defn initial?
   [state grammar]

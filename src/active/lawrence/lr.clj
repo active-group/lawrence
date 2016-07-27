@@ -244,6 +244,13 @@
            (empty? (item-lookahead item)))
          accept-items)))
 
+(defn expected-terminals
+  "Compute a set of terminals that might occur next in this state."
+  [closure grammar]
+  (set/union (next-terminals closure grammar)
+             (set (map (comp first item-lookahead)
+                       (accept closure)))))
+
 (defn initial?
   [state grammar]
   (some (fn [item]
@@ -340,7 +347,7 @@
                                                                                       ~@(reverse (take rhs-length attribute-names)))]
                                                                 (if (zero? rhs-length)
                                                                   `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~error-status-name ~input-name)
-                                                                  `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~error-status-name ~input-name))))
+                                                                  `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~error-status-name nil ~input-name))))
                                                             `(~'parse-error "parse error" ~input-name)))]
                    (~'if (~'empty? ~input-name)
                      ;; FIXME: the reduce invocation knows whether input is empty or not

@@ -23,6 +23,7 @@
      ^int ^:unsynchronized-mutable dot
      attribute-value
      ^int error-status
+     expected-terminals
      input]
   IRetVal
   (dot [_] dot)

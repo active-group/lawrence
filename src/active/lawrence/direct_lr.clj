@@ -30,10 +30,10 @@
                                                             (reverse (take rhs-length attribute-values)))]
                      (if (zero? rhs-length)
                        (ds-parse-bar grammar k compute-closure closure lhs attribute-value error-status attribute-values input)
-                       (->RetVal lhs rhs-length attribute-value error-status input)))
+                       (->RetVal lhs rhs-length attribute-value error-status nil input)))
                    (if (handles-error? closure grammar)
                      (ds-handle-error grammar k compute-closure error-status closure attribute-values input)
-                     (->RetVal -1 0 nil error-status input))))]
+                     (->RetVal -1 0 nil error-status (expected-terminals closure grammar) input))))]
     (if (empty? input)
       (reduce)
       (let [pair (first input)
@@ -127,6 +127,6 @@
              3
              input)]
     (if (neg? (.-lhs retval))
-      (c/error `parse "parse error")
+      (c/error `parse "parse error" (.-expected-terminals retval))
       (.-attribute-value retval))))
 

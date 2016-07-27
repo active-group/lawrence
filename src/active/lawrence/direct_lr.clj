@@ -29,7 +29,7 @@
                          attribute-value (apply-attribution attribution
                                                             (reverse (take rhs-length attribute-values)))]
                      (if (zero? rhs-length)
-                       (ds-parse-bar grammar k compute-closure closure lhs attribute-value error-status attribute-values input)
+                       (ds-parse-bar grammar k compute-closure closure lhs attribute-value attribute-values error-status input)
                        (->RetVal lhs rhs-length attribute-value error-status nil input)))
                    (if (handles-error? closure grammar)
                      (ds-handle-error grammar k compute-closure error-status closure attribute-values input)

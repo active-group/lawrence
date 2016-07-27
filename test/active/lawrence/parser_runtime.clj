@@ -2,7 +2,7 @@
   (require [active.clojure.condition :as c]))
 
 (defn parse-error
-  [message input]
-  (c/error `parse-error message (first input)))
+  [message expected input]
+  (c/error `parse-error message expected (first input)))
   
   

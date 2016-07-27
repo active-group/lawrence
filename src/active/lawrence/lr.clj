@@ -248,8 +248,9 @@
   "Compute a set of terminals that might occur next in this state."
   [closure grammar]
   (set/union (next-terminals closure grammar)
-             (set (map (comp first item-lookahead)
-                       (accept closure)))))
+             (set (filter some?
+                          (map (comp first item-lookahead)
+                               (accept closure))))))
 
 (defn initial?
   [state grammar]
@@ -348,7 +349,7 @@
                                                                 (if (zero? rhs-length)
                                                                   `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~error-status-name ~input-name)
                                                                   `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~error-status-name nil ~input-name))))
-                                                            `(~'parse-error "parse error" ~input-name)))]
+                                                            `(~'parse-error "parse error" ~(expected-terminals closure grammar) ~input-name)))]
                    (~'if (~'empty? ~input-name)
                      ;; FIXME: the reduce invocation knows whether input is empty or not
                      (reduce#)
@@ -376,7 +377,7 @@
                                                      [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                                       `(~'if (~'empty? (.-input ~retval-name))
                                                          ~retval-name
-                                                         (~'parse-error "input beyond EOF" (.-input ~retval-name)))]
+                                                         (~'parse-error "input beyond EOF" #{} (.-input ~retval-name)))]
                                                      [])
 
                                                  :else
@@ -417,7 +418,7 @@
                                   [`(~'= ~(grammar-start grammar) (.-lhs ~retval-name))
                                    `(~'if (~'empty? (.-input ~retval-name))
                                       ~retval-name
-                                      (~'parse-error "input beyond EOF" (.-input ~retval-name)))]
+                                      (~'parse-error "input beyond EOF" ~(expected-terminals closure grammar) (.-input ~retval-name)))]
                                   [])
 
                               :else

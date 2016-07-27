@@ -1,4 +1,4 @@
-(defproject lawrence "0.7.0"
+(defproject lawrence "0.8.0-SNAPSHOT"
   :description "Lawrence: LR parser generator"
   :url "https://github.com/active-group/lawrence"
   :license {:name "Eclipse Public License"

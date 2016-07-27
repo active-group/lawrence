@@ -19,7 +19,11 @@
   (set_dot [^int x]))
 
 (deftype RetVal
-    [^int lhs ^int ^:unsynchronized-mutable dot attribute-value input]
+    [^int lhs
+     ^int ^:unsynchronized-mutable dot
+     attribute-value
+     ^int error-status
+     input]
   IRetVal
   (dot [_] dot)
   (set_dot [_ ^int x] (set! dot x)))

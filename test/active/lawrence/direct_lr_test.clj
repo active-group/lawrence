@@ -42,7 +42,12 @@
 (deftest g10-test
   (should-accept g10 (list [:l] [:n 5] [:+] [:n 7] [:r] [:*] [:n 10]) 120)
   (should-error g10 (list [:l] [:n 5] [:+] [:n 7] [:*] [:n 10])))
-                                                                             
+
+(deftest g10-error-test
+  (should-accept g10-error (list [:l] [:n 5] [:+] [:n 7] [:r] [:*] [:n 10]) 120)
+  (should-accept g10-error (list [:l] [:n 5] [:+] [:+] [:n 7] [:r] [:*] [:n 10]) 0)
+  (should-accept g10-error (list [:l] [:n 5] [:+] [:+] [:n 7] [:r] [:+] [:n 10]) 10))
+
 
 (deftest goptional-test
   ;;(should-accept goptional (list [:bar]) :absent)

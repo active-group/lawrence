@@ -325,9 +325,10 @@
         next-nonterms (next-nonterminals closure grammar)
         next-symbols (concat next-terms (next-nonterminals closure grammar))
         input-name `in#
+        error-status-name `es#
         pair-name `p#
         parse `(~'defn- ~(parse-name id)
-                 [~@attribute-names ~input-name]
+                 [~@attribute-names ~error-status-name ~input-name]
                  ;; FIXME: lift this to the top level
                  (~'let [reduce# (~'fn []
                                    ~(make-lookahead-matcher closure k input-name
@@ -338,8 +339,8 @@
                                                                     attribute-value `(~attribution
                                                                                       ~@(reverse (take rhs-length attribute-names)))]
                                                                 (if (zero? rhs-length)
-                                                                  `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~input-name)
-                                                                  `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~input-name))))
+                                                                  `(~(parse-bar-name id) ~lhs ~attribute-value ~@attribute-names ~error-status-name ~input-name)
+                                                                  `(~'->RetVal ~lhs ~rhs-length ~attribute-value ~error-status-name ~input-name))))
                                                             `(~'parse-error "parse error" ~input-name)))]
                    (~'if (~'empty? ~input-name)
                      ;; FIXME: the reduce invocation knows whether input is empty or not
@@ -356,6 +357,7 @@
                                                   (~(parse-name (state-id next-state))
                                                    (~'pair-attribute-value ~pair-name)
                                                    ~@(take (- (active next-state) 1) attribute-names)
+                                                   ~error-status-name
                                                    (~'rest ~input-name))]
                                             ~(if (empty? next-nonterms)
                                                `(~'dec-dot ~retval-name)
@@ -374,6 +376,7 @@
                                                  (~(parse-bar-name id)
                                                   (.lhs ~retval-name) (.-attribute-value ~retval-name)
                                                   ~@attribute-names
+                                                  ~error-status-name
                                                   (.-input ~retval-name))))))])
                                     next-terms))
                          (reduce#))))))
@@ -382,7 +385,7 @@
                         retval-name `rv#
                         nonterm-name `nt#]
                     `(~'defn- ~(parse-bar-name id)
-                       [~nonterm-name ~av-name ~@attribute-names ~input-name]
+                       [~nonterm-name ~av-name ~@attribute-names ~error-status-name ~input-name]
                        (~'let [~(with-meta retval-name {:tag 'RetVal})
                                ;; FIXME: group by cases
                                (~'case (~'int ~nonterm-name)
@@ -394,6 +397,7 @@
                                                  `(~(parse-name (state-id next-state))
                                                    ~av-name
                                                    ~@(take (- (active next-state) 1) attribute-names)
+                                                   ~error-status-name
                                                    ~input-name)]))
                                             next-nonterms)))]
                          ~(if (empty? next-nonterms)
@@ -411,8 +415,9 @@
 
                               :else
                               (recur  (.lhs ~retval-name) (.-attribute-value ~retval-name)
-                                     ~@attribute-names
-                                     (.-input ~retval-name)))))))
+                                      ~@attribute-names
+                                      ~error-status-name
+                                      (.-input ~retval-name)))))))
         code [parse parse-bar]]
     [code @state-map-atom @todo]))
 
@@ -460,7 +465,7 @@
                   ~(let [input-name `input#]
                      `(~'defn ~'parse
                         [~input-name]
-                        (~'let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) (~'seq ~input-name))]
+                        (~'let [^active.lawrence.runtime.RetVal retval# (~(parse-name 0) 3 (~'seq ~input-name))]
                           (.-attribute-value retval#)))))]
           (prn form))))))
 

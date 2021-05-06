@@ -2,6 +2,11 @@
 
 (deftype Pair [^long token attribute-value])
 
+(defmethod print-method Pair [v ^java.io.Writer w]
+  (.write w "#")
+  (print-method (.token v) w)
+  (print-method (.attribute-value v) w))
+
 (defn make-pair
   [t av]
   (Pair. t av))
